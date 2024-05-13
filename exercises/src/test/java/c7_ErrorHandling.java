@@ -3,6 +3,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -33,7 +34,12 @@ public class c7_ErrorHandling extends ErrorHandlingBase {
     @Test
     public void houston_we_have_a_problem() {
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
-        Flux<String> heartBeat = probeHeartBeatSignal()
+        Flux<String> heartBeat = probeHeartBeatSignal().
+                timeout(Duration.ofMillis(3000))
+                .onErrorMap(e -> {
+                    errorRef.set(e);
+                    return e;
+                });
                 //todo: do your changes here
                 //todo: & here
                 ;
@@ -54,9 +60,8 @@ public class c7_ErrorHandling extends ErrorHandlingBase {
     @Test
     public void potato_potato() {
         Mono<String> currentUser = getCurrentUser()
-                //todo: change this line only
-                //use SecurityException
-                ;
+                .onErrorMap(
+                        originalError -> new SecurityException(originalError));
 
         StepVerifier.create(currentUser)
                     .expectErrorMatches(e -> e instanceof SecurityException &&

@@ -3,6 +3,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * It's time to do some data manipulation!
  *
@@ -27,7 +30,7 @@ public class c2_TransformingSequence extends TransformingSequenceBase {
     @Test
     public void transforming_sequence() {
         Flux<Integer> numbersFlux = numerical_service()
-                //todo change only this line
+                .flatMap(i -> Mono.just(i + 1))
                 ;
 
         //StepVerifier is used for testing purposes
@@ -48,7 +51,11 @@ public class c2_TransformingSequence extends TransformingSequenceBase {
         Flux<Integer> numbersFlux = numerical_service_2();
 
         //todo: do your changes here
-        Flux<String> resultSequence = null;
+        Flux<String> resultSequence = numbersFlux.map(i -> {
+            if (i > 0) return ">";
+            else if (i < 0) return "<";
+            else return "=";
+        });
 
         //don't change code below
         StepVerifier.create(resultSequence)
@@ -65,7 +72,7 @@ public class c2_TransformingSequence extends TransformingSequenceBase {
     @Test
     public void cast() {
         Flux<String> numbersFlux = object_service()
-                .map(i -> (String) i); //todo: change this line only
+                .cast(String.class); //todo: change this line only
 
 
         StepVerifier.create(numbersFlux)
@@ -80,6 +87,7 @@ public class c2_TransformingSequence extends TransformingSequenceBase {
     @Test
     public void maybe() {
         Mono<String> result = maybe_service()
+                .switchIfEmpty(Mono.just("no results"))
                 //todo: change this line only
                 ;
 
@@ -94,9 +102,15 @@ public class c2_TransformingSequence extends TransformingSequenceBase {
      */
     @Test
     public void sequence_sum() {
-        //todo: change code as you need
-        Mono<Integer> sum = null;
-        numerical_service();
+        Mono<Integer> sum = numerical_service().buffer().single().map(i -> {
+            int num = 0;
+            for (int x = 0; x < i.size(); x++) {
+                num += i.get(x);
+            }
+
+            return Mono.just(num);
+        }).block();
+
 
         //don't change code below
         StepVerifier.create(sum)
@@ -110,9 +124,8 @@ public class c2_TransformingSequence extends TransformingSequenceBase {
      */
     @Test
     public void sum_each_successive() {
-        Flux<Integer> sumEach = numerical_service()
-                //todo: do your changes here
-                ;
+
+        Flux<Integer> sumEach = numerical_service().scan(0, (a, b) -> a + b).skip(1);
 
         StepVerifier.create(sumEach)
                     .expectNext(1, 3, 6, 10, 15, 21, 28, 36, 45, 55)
@@ -128,7 +141,7 @@ public class c2_TransformingSequence extends TransformingSequenceBase {
      */
     @Test
     public void sequence_starts_with_zero() {
-        Flux<Integer> result = numerical_service()
+        Flux<Integer> result = Flux.concat(Flux.range(0, 1), numerical_service())
                 //todo: change this line only
                 ;
 
